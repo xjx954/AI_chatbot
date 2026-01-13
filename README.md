@@ -1,20 +1,16 @@
 # AI模型调用项目
 
-这是一个使用Python调用各种AI模型的工具包，支持OpenAI、DeepSeek、Hugging Face、Google Gemini等多种API服务。项目包含核心工具模块、统一接口和实际应用示例（披萨订餐机器人）。
+这是一个使用Python调用AI模型的工具包，使用DeepSeek API进行对话。项目包含核心工具模块和实际应用示例（披萨订餐机器人）。
 
 ## 📋 项目功能
 
-1. **支持多种AI模型API**
-   - DeepSeek（推荐，中文支持好，免费额度大）
-   - OpenAI（需要付费）
-   - Hugging Face（完全免费）
-   - Google Gemini（免费额度）
-   - 通义千问（新用户免费）
+1. **AI模型调用**
+   - 使用DeepSeek API（中文支持好，免费额度大）
+   - 支持单次对话和多轮对话
 
 2. **核心功能**
    - 单次对话调用
    - 多轮对话支持
-   - 统一接口，轻松切换不同模型
    - 实际应用：披萨餐厅订餐机器人（GUI界面）
 
 ## 📁 项目结构
@@ -24,14 +20,6 @@ A_study/
 ├── tool.py                      # 核心工具模块（使用DeepSeek API）
 │   ├── get_completion()         # 单次对话函数
 │   └── get_completion_from_messages()  # 多轮对话函数
-│
-├── utils.py                     # 工具函数
-│   ├── get_openai_key()        # 读取OpenAI API密钥
-│   └── get_api_key()           # 通用API密钥读取函数
-│
-├── unified_ai_client.py        # 统一AI客户端接口
-│   ├── UnifiedAIClient         # 统一客户端类
-│   └── quick_chat()            # 快速调用函数
 │
 ├── pizza_bot.py                # 披萨餐厅订餐机器人（GUI应用）
 │   └── 使用Panel创建Web界面，实现智能订餐对话
@@ -117,24 +105,6 @@ response2 = get_completion_from_messages(messages, temperature=0.7)
 print(response2)
 ```
 
-### 示例3: 使用统一接口切换模型
-
-```python
-from unified_ai_client import quick_chat, UnifiedAIClient
-
-# 方式1: 快速调用
-response = quick_chat("你好，介绍一下Python", provider="deepseek")
-print(response)
-
-# 方式2: 使用统一客户端
-client = UnifiedAIClient(default_provider="deepseek")
-response = client.chat("你好，介绍一下Python")
-print(response)
-
-# 切换到其他模型
-response = client.chat("你好，介绍一下Python", provider="gemini")
-print(response)
-```
 
 ## 🔧 核心函数说明
 
@@ -179,21 +149,18 @@ python pizza_bot.py
 
 ## 📝 项目特点
 
-1. **统一接口**: 通过 `unified_ai_client.py` 可以轻松切换不同的AI服务
-2. **多模型支持**: 支持多种免费和付费的AI模型
-3. **对话管理**: 支持单次对话和多轮对话
-4. **实际应用**: 包含完整的GUI应用示例
-5. **易于使用**: 代码结构清晰，易于理解和扩展
+1. **简单易用**: 核心功能集中在 `tool.py`，使用简单
+2. **对话管理**: 支持单次对话和多轮对话
+3. **实际应用**: 包含完整的GUI应用示例（披萨订餐机器人）
+4. **易于扩展**: 代码结构清晰，易于理解和扩展
 
-## 🔑 API密钥获取地址
+## 🔑 API密钥获取
 
-| 服务 | 注册地址 | 免费额度 |
-|------|---------|---------|
-| DeepSeek | https://platform.deepseek.com/ | 每天200万tokens |
-| Hugging Face | https://huggingface.co/ | 完全免费 |
-| Google Gemini | https://makersuite.google.com/app/apikey | 每天1500次请求 |
-| 通义千问 | https://dashscope.console.aliyun.com/ | 新用户免费额度 |
-| OpenAI | https://platform.openai.com/ | 需要付费 |
+**DeepSeek API密钥获取：**
+1. 访问 https://platform.deepseek.com/
+2. 注册/登录账号
+3. 在控制台创建API密钥
+4. 免费额度：每天200万tokens
 
 ## ⚠️ 注意事项
 
@@ -215,7 +182,7 @@ python pizza_bot.py
 **A**: 检查 `.env` 文件中的API密钥是否正确配置
 
 ### Q: 如何切换不同的AI模型？
-**A**: 使用 `unified_ai_client.py` 中的 `UnifiedAIClient` 类
+**A**: 修改 `tool.py` 中的API调用代码，或直接修改模型参数
 
 ### Q: 如何实现多轮对话？
 **A**: 使用 `get_completion_from_messages()` 函数，维护一个消息列表，每次对话后添加新的消息
