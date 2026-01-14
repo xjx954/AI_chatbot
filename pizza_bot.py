@@ -4,8 +4,13 @@
 使用Panel创建GUI界面，使用DeepSeek API进行对话
 """
 import panel as pn
-from tool import get_completion_from_messages
+from tool import get_completion_from_messages, moderation_create
 import time
+import os
+from dotenv import load_dotenv, find_dotenv
+
+# 读取环境变量
+_ = load_dotenv(find_dotenv())
 
 # 初始化Panel
 pn.extension()
@@ -78,6 +83,17 @@ AI酱 1.50
 conversation = context.copy()
 
 
+def check_openai_support():
+    """
+    检查是否支持OpenAI（是否有OpenAI API Key）
+    
+    返回:
+        bool: 如果支持OpenAI返回True，否则返回False
+    """
+    openai_api_key = os.getenv('OPENAI_API_KEY')
+    return openai_api_key is not None and openai_api_key.strip() != ""
+
+
 def collect_messages(_):
     """
     收集用户消息并获取AI回复
@@ -94,11 +110,56 @@ def collect_messages(_):
     if not user_input or user_input.strip() == "":
         return pn.Column(*panels)
     
+    # 先检查是否支持OpenAI，如果支持则进行内容审核
+    if check_openai_support():
+        moderation_result = moderation_create(user_input)
+        
+        # 检查是否是API错误
+        if 'error' in moderation_result and moderation_result.get('api_error', False):
+            # API调用失败，显示错误信息但不阻止处理
+            error_message = f"⚠️ **审核功能暂时不可用**: {moderation_result['error']}\n\n将跳过审核继续处理。"
+            panels.append(
+                pn.Row('用户:', pn.pane.Markdown(user_input, width=600))
+            )
+            panels.append(
+                pn.Row('系统:', pn.pane.Markdown(
+                    error_message, 
+                    width=600, 
+                    styles={'background-color': '#FFF4E6', 'color': '#CC6600'}
+                ))
+            )
+            # 继续处理，不阻止
+        elif moderation_result.get('flagged', False):
+            # 如果内容被标记为不当，拒绝处理
+            # 获取问题类别
+            categories = moderation_result.get('categories', {})
+            flagged_categories = [k for k, v in categories.items() if v]
+            
+            # 显示警告信息
+            warning_message = "⚠️ **警告**: 您的输入包含不当内容，无法处理。"
+            if flagged_categories:
+                warning_message += f"\n\n问题类别: {', '.join(flagged_categories)}"
+            
+            panels.append(
+                pn.Row('用户:', pn.pane.Markdown(user_input, width=600))
+            )
+            panels.append(
+                pn.Row('系统:', pn.pane.Markdown(
+                    warning_message, 
+                    width=600, 
+                    styles={'background-color': '#FFE6E6', 'color': '#CC0000'}
+                ))
+            )
+            
+            # 清空输入框
+            inp.value = ''
+            return pn.Column(*panels)
+    
     # 添加用户消息到对话历史
     conversation.append({'role': 'user', 'content': user_input})
     
     # 获取AI回复
-    response = get_completion_from_messages(conversation, temperature=0.7)
+    response = get_completion_from_messages(conversation, temperature=0.7, max_tokens=500)
     
     # 添加AI回复到对话历史
     conversation.append({'role': 'assistant', 'content': response})
@@ -141,7 +202,8 @@ content = pn.Column(
         styles={'font-size': '24px', 'font-weight': 'bold', 'text-align': 'center'}
     ),
     pn.pane.Markdown(
-        "欢迎使用订餐机器人！请输入您的订单需求。",
+        "欢迎使用订餐机器人！请输入您的订单需求。" + 
+        ("\n\n✅ 内容审核功能已启用" if check_openai_support() else "\n\nℹ️ 提示: 设置 OPENAI_API_KEY 可启用内容审核功能"),
         styles={'color': '#666', 'text-align': 'center'}
     ),
     pn.Spacer(height=10),
